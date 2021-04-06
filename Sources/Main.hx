@@ -3,53 +3,75 @@ package;
 import kha.Assets;
 import kha.Color;
 import kha.Framebuffer;
-import kha.Scheduler;
 import kha.System;
+import kha.input.Gamepad;
 
 class Main {
-	static var logo = ["1 1 1 1 111", "11  111 111", "1 1 1 1 1 1"];
+	static var axes:Array<Float> = [];
+	static var buttons:Array<Float> = [];
 
-	static function update(): Void {
-	}
-
-	static function render(frames: Array<Framebuffer>): Void {
-		// As we are using only 1 window, grab the first framebuffer
+	static function render(frames:Array<Framebuffer>):Void {
 		final fb = frames[0];
-		// Now get the `g2` graphics object so we can draw
-		final g2 = fb.g2;
-		// Start drawing, and clear the framebuffer to `petrol`
-		g2.begin(true, Color.fromBytes(0, 95, 106));
-		// Offset all following drawing operations from the top-left a bit
-		g2.pushTranslation(64, 64);
-		// Fill the following rects with red
-		g2.color = Color.Red;
+		final g = fb.g2;
+		g.begin(true, Color.fromBytes(0, 95, 106));
 
-		// Loop over the logo (Array<String>) and draw a rect for each "1"
-		for (rowIndex in 0...logo.length) {
-		  final row = logo[rowIndex];
+		g.color = Color.Black;
+		g.drawRect(100 + 0 * 120, 100, 100, 100, 2);
+		g.color = Color.Red;
+		g.fillRect(100 + 0 * 120 + 50 + axes[0] * 50 - 5, 100 + 50 + axes[1] * 50 - 5, 10, 10);
 
-		  for (colIndex in 0...row.length) {
-		    switch row.charAt(colIndex) {
-		      case "1": g2.fillRect(colIndex * 16, rowIndex * 16, 16, 16);
-		      case _:
-		    }
-		  }
+		g.color = Color.Black;
+		g.drawRect(100 + 1 * 120, 100, 100, 100, 2);
+		g.color = Color.Red;
+		g.fillRect(100 + 1 * 120 + 50 + axes[2] * 50 - 5, 100 + 50 + axes[3] * 50 - 5, 10, 10);
+
+		for (i in 4...axes.length) {
+			g.color = Color.Black;
+			g.drawRect(100 + 2 * 120 + (i - 4) * 60, 100, 50, 100, 2);
+			g.color = Color.Red;
+			g.fillRect(100 + 2 * 120 + (i - 4) * 60, 100 + 100 - axes[i] * 100, 50, axes[i] * 100);
 		}
 
-		// Pop the pushed translation so it will not accumulate over multiple frames
-		g2.popTransformation();
-		// Finish the drawing operations
-		g2.end();
+		for (i in 0...buttons.length) {
+			var x = i * 60;
+			var y = 250;
+			while (x >= 600) {
+				y += 100;
+				x -= 600;
+				trace(x);
+			}
+
+			if (buttons[i] > 0.5) {
+				g.color = Color.Red;
+				g.fillRect(100 + x, y, 50, 50);
+			} else {
+				g.color = Color.Black;
+				g.drawRect(100 + x, y, 50, 50, 2);
+			}
+		}
+
+		g.end();
+	}
+
+	static function axis(axis:Int, value:Float):Void {
+		if (axis >= axes.length) {
+			axes.resize(axes.length);
+		}
+		axes[axis] = value;
+	}
+
+	static function button(button:Int, value:Float) {
+		if (button >= buttons.length) {
+			buttons.resize(buttons.length);
+		}
+		buttons[button] = value;
 	}
 
 	public static function main() {
-		System.start({title: "Project", width: 1024, height: 768}, function (_) {
-			// Just loading everything is ok for small projects
-			Assets.loadEverything(function () {
-				// Avoid passing update/render directly,
-				// so replacing them via code injection works
-				Scheduler.addTimeTask(function () { update(); }, 0, 1 / 60);
-				System.notifyOnFrames(function (frames) { render(frames); });
+		System.start({title: "GamepadTest", width: 1024, height: 768}, function(_) {
+			Assets.loadEverything(function() {
+				Gamepad.get().notify(axis, button);
+				System.notifyOnFrames(render);
 			});
 		});
 	}
